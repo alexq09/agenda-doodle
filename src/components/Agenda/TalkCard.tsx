@@ -10,7 +10,8 @@ interface TalkCardProps {
 }
 
 export const TalkCard = ({ talk, onEdit, onDelete }: TalkCardProps) => {
-  const height = `${talk.duration}px`;
+  // Calculate height: each 30 minutes = 60px
+  const height = `${(talk.duration / 30) * 60}px`;
 
   return (
     <div
@@ -23,6 +24,7 @@ export const TalkCard = ({ talk, onEdit, onDelete }: TalkCardProps) => {
         height,
         top: 0,
         backgroundColor: talk.color || 'white',
+        zIndex: 10
       }}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', JSON.stringify({

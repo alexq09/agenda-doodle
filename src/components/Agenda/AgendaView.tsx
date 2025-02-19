@@ -92,6 +92,7 @@ export const AgendaView = () => {
       setTalks([...talks, newTalk]);
     }
     setEditingTalk(undefined);
+    setDialogOpen(false);
   };
 
   const handleEditTalk = (talk: Talk) => {
@@ -103,8 +104,44 @@ export const AgendaView = () => {
     setTalks(talks.filter(t => t.id !== id));
   };
 
-  const getTalksForTimeSlot = (time: string) => {
-    return talks.filter(talk => talk.startTime === time);
+  const timeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const findTalkAtTime = (time: string): Talk | undefined => {
+    const timeInMinutes = timeToMinutes(time);
+    return talks.find(talk => {
+      const talkStartMinutes = timeToMinutes(talk.startTime);
+      const talkEndMinutes = talkStartMinutes + talk.duration;
+      return timeInMinutes >= talkStartMinutes && timeInMinutes < talkEndMinutes;
+    });
+  };
+
+  const isFreeTime = (time: string): boolean => {
+    return !findTalkAtTime(time);
+  };
+
+  const renderFreeTime = (time: string) => {
+    if (!isFreeTime(time)) return null;
+    const nextTalk = talks.find(talk => timeToMinutes(talk.startTime) > timeToMinutes(time));
+    const nextTalkStart = nextTalk ? timeToMinutes(nextTalk.startTime) : timeToMinutes('17:00');
+    const currentTimeMinutes = timeToMinutes(time);
+    const duration = Math.min(30, nextTalkStart - currentTimeMinutes);
+    
+    if (duration <= 0) return null;
+
+    return (
+      <div
+        className="absolute left-0 right-0 mx-4 bg-gray-50 text-gray-400 text-xs flex items-center justify-center"
+        style={{
+          height: `${duration * 2}px`,
+          top: 0,
+        }}
+      >
+        Free Time
+      </div>
+    );
   };
 
   return (
@@ -120,23 +157,29 @@ export const AgendaView = () => {
       </div>
 
       <div className="relative pl-16 border rounded-lg bg-white shadow-sm">
-        {timeSlots.map((time) => (
-          <div key={time} className="relative">
-            <TimeSlot
-              time={time}
-              onDragOver={(e) => handleDragOver(e, time)}
-              onDrop={(e) => handleDrop(e, time)}
-            />
-            {getTalksForTimeSlot(time).map((talk) => (
-              <TalkCard
-                key={talk.id}
-                talk={talk}
-                onEdit={handleEditTalk}
-                onDelete={handleDeleteTalk}
+        {timeSlots.map((time) => {
+          const talk = findTalkAtTime(time);
+          const showTalk = talk?.startTime === time;
+
+          return (
+            <div key={time} className="relative">
+              <TimeSlot
+                time={time}
+                onDragOver={(e) => handleDragOver(e, time)}
+                onDrop={(e) => handleDrop(e, time)}
               />
-            ))}
-          </div>
-        ))}
+              {showTalk && (
+                <TalkCard
+                  key={talk.id}
+                  talk={talk}
+                  onEdit={handleEditTalk}
+                  onDelete={handleDeleteTalk}
+                />
+              )}
+              {isFreeTime(time) && renderFreeTime(time)}
+            </div>
+          );
+        })}
       </div>
 
       <TalkDialog
