@@ -138,6 +138,8 @@ export const AgendaView = () => {
           height: `${duration * 2}px`,
           top: 0,
         }}
+        onDragOver={(e) => handleDragOver(e, time)}
+        onDrop={(e) => handleDrop(e, time)}
       >
         Free Time
       </div>
