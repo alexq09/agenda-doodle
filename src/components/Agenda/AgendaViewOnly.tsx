@@ -14,14 +14,14 @@ const timeSlots = Array.from({ length: 17 }, (_, i) => {
 const AGENDA_NAMES = ['Main Stage', 'Workshop Room', 'Panel Discussion'];
 
 // Sample data to showcase the agenda view
-const sampleAgendas = {
+const sampleAgendas: { [key: string]: Talk[] } = {
   'Main Stage': [
     {
       id: '1',
       title: 'Keynote Address',
       speaker: 'Jane Smith, CEO',
       startTime: '09:30',
-      duration: 60,
+      duration: 60 as 60, // Explicitly cast as 60
       color: '#f3f4f6'
     },
     {
@@ -29,7 +29,7 @@ const sampleAgendas = {
       title: 'Future of Technology',
       speaker: 'John Doe, CTO',
       startTime: '11:00',
-      duration: 30,
+      duration: 30 as 30, // Explicitly cast as 30
       color: '#f3f4f6'
     }
   ],
@@ -39,7 +39,7 @@ const sampleAgendas = {
       title: 'Hands-on Workshop',
       speaker: 'Alex Johnson',
       startTime: '10:00',
-      duration: 60,
+      duration: 60 as 60, // Explicitly cast as 60
       color: '#f3f4f6'
     }
   ],
@@ -49,7 +49,7 @@ const sampleAgendas = {
       title: 'Industry Trends Panel',
       speaker: 'Various Speakers',
       startTime: '13:30',
-      duration: 60,
+      duration: 60 as 60, // Explicitly cast as 60
       color: '#f3f4f6'
     }
   ]
