@@ -5,11 +5,12 @@ import { cn } from '@/lib/utils';
 
 interface TalkCardProps {
   talk: Talk;
+  agendaName: string;
   onEdit: (talk: Talk) => void;
   onDelete: (id: string) => void;
 }
 
-export const TalkCard = ({ talk, onEdit, onDelete }: TalkCardProps) => {
+export const TalkCard = ({ talk, agendaName, onEdit, onDelete }: TalkCardProps) => {
   // Calculate height: each 30 minutes = 60px
   const height = `${(talk.duration / 30) * 60}px`;
 
@@ -32,6 +33,7 @@ export const TalkCard = ({ talk, onEdit, onDelete }: TalkCardProps) => {
           type: 'talk',
           startTime: talk.startTime,
           duration: talk.duration,
+          agendaName: agendaName
         }));
       }}
     >

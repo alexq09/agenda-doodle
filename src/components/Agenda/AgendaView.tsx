@@ -7,6 +7,7 @@ import { TalkCard } from './TalkCard';
 import { TalkDialog } from './TalkDialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const timeSlots = Array.from({ length: 17 }, (_, i) => {
   const hour = Math.floor(i / 2) + 9;
@@ -14,8 +15,18 @@ const timeSlots = Array.from({ length: 17 }, (_, i) => {
   return `${hour.toString().padStart(2, '0')}:${minute}`;
 });
 
+const AGENDA_NAMES = ['Main Stage', 'Workshop Room', 'Panel Discussion'];
+
 export const AgendaView = () => {
-  const [talks, setTalks] = useState<Talk[]>([]);
+  // Store talks for multiple agendas
+  const [agendas, setAgendas] = useState<{ 
+    [key: string]: Talk[] 
+  }>({
+    'Main Stage': [],
+    'Workshop Room': [],
+    'Panel Discussion': []
+  });
+  const [activeAgenda, setActiveAgenda] = useState<string>(AGENDA_NAMES[0]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTalk, setEditingTalk] = useState<Talk | undefined>();
   const { toast } = useToast();
@@ -30,8 +41,9 @@ export const AgendaView = () => {
     const data = e.dataTransfer.getData('text/plain');
     const draggedItem: DragItem = JSON.parse(data);
 
-    if (draggedItem.type === 'talk') {
-      const updatedTalks = talks.map(talk => {
+    // Only process if it's a talk and from the current agenda
+    if (draggedItem.type === 'talk' && draggedItem.agendaName === activeAgenda) {
+      const updatedTalks = agendas[activeAgenda].map(talk => {
         if (talk.id === draggedItem.id) {
           return {
             ...talk,
@@ -53,7 +65,10 @@ export const AgendaView = () => {
         return;
       }
 
-      setTalks(updatedTalks);
+      setAgendas({
+        ...agendas,
+        [activeAgenda]: updatedTalks
+      });
     }
   };
 
@@ -77,7 +92,7 @@ export const AgendaView = () => {
     const id = editingTalk?.id || uuidv4();
     const newTalk = { ...talkData, id };
 
-    if (checkForOverlap(talks, id, talkData.startTime, talkData.duration)) {
+    if (checkForOverlap(agendas[activeAgenda], id, talkData.startTime, talkData.duration)) {
       toast({
         title: "Cannot save talk",
         description: "This would cause an overlap with another talk",
@@ -86,11 +101,18 @@ export const AgendaView = () => {
       return;
     }
 
+    let updatedTalks;
     if (editingTalk) {
-      setTalks(talks.map(t => t.id === id ? newTalk : t));
+      updatedTalks = agendas[activeAgenda].map(t => t.id === id ? newTalk : t);
     } else {
-      setTalks([...talks, newTalk]);
+      updatedTalks = [...agendas[activeAgenda], newTalk];
     }
+
+    setAgendas({
+      ...agendas,
+      [activeAgenda]: updatedTalks
+    });
+    
     setEditingTalk(undefined);
     setDialogOpen(false);
   };
@@ -101,7 +123,10 @@ export const AgendaView = () => {
   };
 
   const handleDeleteTalk = (id: string) => {
-    setTalks(talks.filter(t => t.id !== id));
+    setAgendas({
+      ...agendas,
+      [activeAgenda]: agendas[activeAgenda].filter(t => t.id !== id)
+    });
   };
 
   const timeToMinutes = (time: string) => {
@@ -111,7 +136,7 @@ export const AgendaView = () => {
 
   const findTalkAtTime = (time: string): Talk | undefined => {
     const timeInMinutes = timeToMinutes(time);
-    return talks.find(talk => {
+    return agendas[activeAgenda].find(talk => {
       const talkStartMinutes = timeToMinutes(talk.startTime);
       const talkEndMinutes = talkStartMinutes + talk.duration;
       return timeInMinutes >= talkStartMinutes && timeInMinutes < talkEndMinutes;
@@ -124,7 +149,7 @@ export const AgendaView = () => {
 
   const renderFreeTime = (time: string) => {
     if (!isFreeTime(time)) return null;
-    const nextTalk = talks.find(talk => timeToMinutes(talk.startTime) > timeToMinutes(time));
+    const nextTalk = agendas[activeAgenda].find(talk => timeToMinutes(talk.startTime) > timeToMinutes(time));
     const nextTalkStart = nextTalk ? timeToMinutes(nextTalk.startTime) : timeToMinutes('17:00');
     const currentTimeMinutes = timeToMinutes(time);
     const duration = Math.min(30, nextTalkStart - currentTimeMinutes);
@@ -149,7 +174,7 @@ export const AgendaView = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-semibold">Event Agenda</h1>
+        <h1 className="text-2xl font-semibold">Event Agendas</h1>
         <Button onClick={() => {
           setEditingTalk(undefined);
           setDialogOpen(true);
@@ -158,31 +183,46 @@ export const AgendaView = () => {
         </Button>
       </div>
 
-      <div className="relative pl-16 border rounded-lg bg-white shadow-sm">
-        {timeSlots.map((time) => {
-          const talk = findTalkAtTime(time);
-          const showTalk = talk?.startTime === time;
+      <Tabs value={activeAgenda} onValueChange={setActiveAgenda} className="mb-6">
+        <TabsList className="w-full justify-start">
+          {AGENDA_NAMES.map((agenda) => (
+            <TabsTrigger key={agenda} value={agenda} className="flex-1">
+              {agenda}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-          return (
-            <div key={time} className="relative">
-              <TimeSlot
-                time={time}
-                onDragOver={(e) => handleDragOver(e, time)}
-                onDrop={(e) => handleDrop(e, time)}
-              />
-              {showTalk && (
-                <TalkCard
-                  key={talk.id}
-                  talk={talk}
-                  onEdit={handleEditTalk}
-                  onDelete={handleDeleteTalk}
-                />
-              )}
-              {isFreeTime(time) && renderFreeTime(time)}
+        {AGENDA_NAMES.map((agenda) => (
+          <TabsContent key={agenda} value={agenda} className="m-0">
+            <div className="relative pl-16 border rounded-lg bg-white shadow-sm">
+              {timeSlots.map((time) => {
+                const talk = findTalkAtTime(time);
+                const showTalk = talk?.startTime === time;
+
+                return (
+                  <div key={time} className="relative">
+                    <TimeSlot
+                      time={time}
+                      onDragOver={(e) => handleDragOver(e, time)}
+                      onDrop={(e) => handleDrop(e, time)}
+                    />
+                    {showTalk && (
+                      <TalkCard
+                        key={talk.id}
+                        talk={talk}
+                        agendaName={activeAgenda}
+                        onEdit={handleEditTalk}
+                        onDelete={handleDeleteTalk}
+                      />
+                    )}
+                    {isFreeTime(time) && renderFreeTime(time)}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+          </TabsContent>
+        ))}
+      </Tabs>
 
       <TalkDialog
         open={dialogOpen}

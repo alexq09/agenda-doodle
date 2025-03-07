@@ -13,4 +13,5 @@ export type DragItem = {
   type: string;
   startTime: string;
   duration: number;
+  agendaName: string;
 };
