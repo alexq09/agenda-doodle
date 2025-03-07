@@ -19,7 +19,7 @@ export const TalkCard = ({ talk, agendaName, onEdit, onDelete }: TalkCardProps) 
       draggable
       className={cn(
         "absolute left-0 right-0 mx-4 rounded-lg bg-white p-3 shadow-sm border border-gray-100",
-        "hover:shadow-md transition-shadow cursor-move select-none"
+        "hover:shadow-md transition-shadow cursor-move select-none overflow-hidden"
       )}
       style={{
         height,
@@ -37,10 +37,10 @@ export const TalkCard = ({ talk, agendaName, onEdit, onDelete }: TalkCardProps) 
         }));
       }}
     >
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-start">
-          <h3 className="font-medium text-sm line-clamp-2">{talk.title}</h3>
-          <div className="flex gap-1">
+          <h3 className="font-medium text-sm truncate max-w-[80%]">{talk.title}</h3>
+          <div className="flex gap-1 flex-shrink-0">
             <button
               onClick={() => onEdit(talk)}
               className="p-1 hover:bg-gray-100 rounded-md transition-colors"
@@ -61,7 +61,7 @@ export const TalkCard = ({ talk, agendaName, onEdit, onDelete }: TalkCardProps) 
             </button>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">{talk.speaker}</p>
+        <p className="text-xs text-gray-500 mt-1 truncate">{talk.speaker}</p>
         <div className="mt-auto text-xs text-gray-400">
           {talk.duration} mins
         </div>
